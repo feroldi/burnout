@@ -1,30 +1,30 @@
 #!/usr/bin/env python
 
-import peewee
+import peewee as pw
 import argparse
 import pytz
 import os
 
 from datetime import datetime, time, timedelta
 
-database = peewee.SqliteDatabase("burnout.sqlite3")
+database = pw.SqliteDatabase(None)
 
 local_tz = pytz.timezone(os.environ["TZ"])
 
 
-class Entry(peewee.Model):
-    start = peewee.DateTimeField()
-    end = peewee.DateTimeField(default=lambda: datetime.now(pytz.utc))
-    detail = peewee.TextField()
-    tag = peewee.FixedCharField(max_length=16)
+class Session(pw.Model):
+    start = pw.DateTimeField()
+    end = pw.DateTimeField(default=lambda: datetime.now(pytz.utc))
+    detail = pw.TextField()
+    tag = pw.FixedCharField(max_length=16)
 
     class Meta:
         database = database
 
 
-class Tracking(peewee.Model):
-    start = peewee.DateTimeField(default=lambda: datetime.now(pytz.utc))
-    is_active = peewee.BooleanField()
+class Tracking(pw.Model):
+    start = pw.DateTimeField(default=lambda: datetime.now(pytz.utc))
+    is_active = pw.BooleanField()
 
     @staticmethod
     def actives():
@@ -49,13 +49,13 @@ def finish_tracking(detail, tag):
         track = actives.get()
         track.is_active = False
         track.save()
-        return Entry.create(start=track.start, detail=detail, tag=tag)
+        return Session.create(start=track.start, detail=detail, tag=tag)
 
 
 def productivity_score(date_from, date_to):
     total_sum = timedelta()
-    for entry in Entry.select(Entry.start, Entry.end).where(
-        Entry.end >= date_from, Entry.start <= date_to
+    for entry in Session.select(Session.start, Session.end).where(
+        Session.end >= date_from, Session.start <= date_to
     ):
         entry_start = datetime.fromisoformat(entry.start).astimezone(pytz.utc)
         entry_end = datetime.fromisoformat(entry.end).astimezone(pytz.utc)
@@ -96,6 +96,7 @@ def status(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--database-path", metavar="PATH", required=True)
     subparsers = parser.add_subparsers()
 
     parser_track = subparsers.add_parser("track")
@@ -115,7 +116,8 @@ if __name__ == "__main__":
     parser_status.set_defaults(func=status)
     args = parser.parse_args()
 
+    database.init(args.database_path)
     database.connect()
-    database.create_tables([Entry, Tracking])
+    database.create_tables([Session, Tracking])
 
     args.func(args)
