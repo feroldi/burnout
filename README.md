@@ -2,10 +2,7 @@
 
 Burnout is a tracking tool that keeps records of one's productivity over periods of time.
 
-**Note**: set the `TZ` environment variable to your time zone's name in order to use this tool.
-E.g., `export TZ=America/Sao_Paulo`.
-
-**Note 2**: this tool probably goes crazy when there are DST changes in your time zone.
+**Note**: this tool probably goes crazy when there are DST changes in your time zone.
 
 ## Example
 
